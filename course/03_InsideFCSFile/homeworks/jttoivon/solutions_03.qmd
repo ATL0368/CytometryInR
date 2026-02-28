@@ -11,7 +11,8 @@ toc-depth: 5
 ---
 
 
-```{r setup}
+```{r}
+#| label: setup
 #| output: false
 library(flowCore)
 library(magrittr)
@@ -21,12 +22,29 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 library(purrr)
+library(ggplot2)
 
 # Default printing causes problems when there are dollar signs in the table.
 # In those cases use the below function instead of the default method
 mykable <- function(df) knitr::kable(df, escape = TRUE, format = "html")
 ```
 
+Helper function.
+
+```{r}
+get_spill <- function(flow_frame) 
+{
+    dl <- flow_frame@description
+    if ("$SPILLOVER" %in% names(dl)) {
+        return(dl[["$SPILLOVER"]])
+    } else if ("SPILL" %in% names(dl)) {
+        return(dl[["SPILL"]])
+    } else {
+        return(NULL)
+    }
+
+}
+```
 
 ## Problem 1
 
@@ -100,9 +118,9 @@ differences.
 ```{r}
 x <- full_join(
     as_tibble(parameters(flow_frame1)@data, rownames="id") %>% select(-desc),
-    as_tibble(parameters(flow_frame2)@data, rownames="id") %>% select(-desc),
-    by="id") %>%
-    relocate(id, name.x, name.y, range.x, range.y, minRange.x, minRange.y, maxRange.x, maxRange.y)
+    as_tibble(parameters(flow_frame2)@data, rownames="id"), # %>% select(-desc),
+    by="id", suffix = c("_1", "_2")) %>%
+    relocate(id, name_1, name_2, desc_2=desc, range_1, range_2, minRange_1, minRange_2, maxRange_1, maxRange_2)
 mykable(x)
 ```
 
@@ -191,8 +209,14 @@ tmp %>% mutate(color = str_extract(N, "^[A-Z]+") %>%
 In the second file the detectors are named completely differently.
 
 ```{r}
+df2
+```
+
+```{r}
 df2 %>% count(TYPE)
 ```
+
+Since file2 is unmixed we have unmixed fluorescence instead of raw fluorescence.
 
 The second file has in addition the "S" value for each observable, except for observables listed below.
 
@@ -239,6 +263,24 @@ glue("file1: {length(laser1)} laser keywords")
 glue("file1: {length(laser1)} laser keywords")
 ```
 
+```{r}
+parse_lasers <- function(L) { 
+    L %>% enframe() %>% unnest(value) %>% 
+        separate_wider_regex(cols = name, c("LASER", i="[0-9]", col="[A-Z]+")) %>% 
+        pivot_wider(id_cols = i, names_from = col, values_from = value)
+}
+```
+
+```{r}
+#| tbl-cap: Lasers of file1.
+parse_lasers(laser1)
+```
+
+```{r}
+#| tbl-cap: Lasers of file2.
+parse_lasers(laser2)
+```
+
 #### Display
 
 
@@ -274,6 +316,7 @@ The transformation keyword has been added in the second file.
 filename3 <- "data/AdditionalFCSFiles/2025-10_22_Contrad.fcs"
 ```
 
+### Load file
 
 ```{r}
 flow_frame3 <- read.FCS(filename=filename3, transformation = FALSE, truncate_max_range = FALSE)
@@ -412,6 +455,43 @@ These differ as well. Not sure what they mean.
 ```{r}
 all %>% filter(name %in% c("$TIMESTEP", "FSC ASF", "THRESHOLD"))
 ```
+
+### All spill matrices
+
+Matrix dimensions.
+
+```{r}
+list(file1 = flow_frame1, file2 = flow_frame2, file3 = flow_frame3) %>% map(get_spill) %>% map(dim)
+```
+
+Matrix column names.
+
+```{r}
+list(file1 = flow_frame1, file2 = flow_frame2, file3 = flow_frame3) %>% map(get_spill) %>% map(colnames)
+```
+
+Looks like the spill matrices only contain non-scatter things that end with "-A".
+
+```{r}
+tidy_spill <- function(m) {
+    m %>% as_tibble() %>% 
+        mutate(rowname = colnames(.), .before=1) %>% 
+        pivot_longer(cols=-rowname, names_to = "colname")
+}
+```
+
+```{r}
+list(file1 = flow_frame1, file2 = flow_frame2, file3 = flow_frame3) %>% 
+    map(get_spill) %>% 
+    map(tidy_spill) %>%
+    bind_rows(.id = "file") %>%
+    ggplot(aes(x = colname, y = rowname, fill=value)) + 
+    geom_raster() +
+    facet_wrap(~file, scale="free")
+```
+
+Why are the spill matrices equal to the identity matrix? Shouldn't at least the conventional
+flow frame (file 3) need it for computing compensation?
 
 ## Problem 3
 
