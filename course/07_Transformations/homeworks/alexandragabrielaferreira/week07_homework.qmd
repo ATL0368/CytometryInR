@@ -1,0 +1,365 @@
+---
+title: "Homework week 07"
+author: "Gabriela Ferreira"
+date: 05/04/2026
+format:
+  html:
+    code-fold: true
+    code-summary: "Show the code"
+toc: true
+toc-depth: 4
+---
+
+
+# Problem 1
+
+"We had not selected FSC and SSC parameters in this attempt, as they are normally displayed in the linear scale. Include them in the list of fluorophores to be transformed, and see how this impacts the visualization (imitating what could accidentally happen in practice if they were left in)."
+
+
+## solution
+
+### code:
+
+```{r}
+#| eval: FALSE
+
+
+# set up directory:
+getwd()
+
+# activate libraries:
+#library(flowWorkspace)
+#library(ggcyto)
+#library(dplyr)
+#library(stringr)
+#library(ggplot2)
+#library(flowCore)
+
+
+# load fcs files
+folder_path = file.path("data")
+fcs_files= list.files(folder_path, pattern=".fcs", full.names = TRUE)
+fcs_files
+
+
+# sort the different types of files into their respective type of files. 
+# Mass cytometry start with G1_2 and spectral flow cytometry files start with 2025.
+MC_files=fcs_files[str_detect(fcs_files, "G1_2")]
+MC_files
+
+SFC_files=fcs_files[str_detect(fcs_files, "2025")]
+SFC_files
+
+# Initialize gatingset for spectral flow cytometry files:
+##get files into a cytoset
+SFC_cytoset = load_cytoset_from_fcs(SFC_files, truncate_max_range=FALSE, transformation=FALSE)
+
+
+## pass files to a gatingset
+SFC_gatingset = GatingSet(SFC_cytoset)
+SFC_gatingset
+
+# getting metadata from gatingset:
+metadata = pData(SFC_gatingset)
+metadata
+
+# create new columns to add to metadata by extracting condition data and specimen name data
+TwoExtraColumns = metadata |> mutate(Condition = name) |>
+     mutate(Condition=str_extract(Condition, "[^_]+(?=\\.fcs$)")) |>
+     mutate(Specimen=str_extract(name, "INF\\d{3}")) |> select(Condition, Specimen)
+TwoExtraColumns
+
+# bind two different daat frames together using cbind:
+UpdatedMetadata <- cbind(metadata, TwoExtraColumns)
+UpdatedMetadata
+
+# update metadata in gatingset:
+pData(SFC_gatingset) <- UpdatedMetadata
+
+# getting parameters from gatingset:
+SFC_parameters = colnames(SFC_gatingset)
+SFC_parameters
+
+# Before transformation is applied:
+
+
+# plot 1: FSC-A  vs SSC-A for 1 file:
+ggcyto(SFC_gatingset[6], subset="root",
+ aes(x="FSC-A", y="SSC-A")) + geom_hex(bins=100)
+
+# plot 2: FSC-A vs FCS-W for 1 file (usually a plot for doublets):
+ggcyto(SFC_gatingset[6], subset="root",
+ aes(x="FSC-A", y="FSC-W")) + geom_hex(bins=100)
+
+# plot 3: SSC-A vs Time for 1 file
+ggcyto(SFC_gatingset[6], subset="root", aes(x="Time", y="SSC-A")) + geom_hex(bins=100)
+
+
+#preparing bioexponential transformation with default values:
+Biexponential <- flowjo_biexp_trans()
+
+#or
+#Biexponential <- flowjo_biexp_trans(channelRange=4096, maxValue=262144,pos=4.5, neg=0, widthBasis=-10) 
+
+#applying transformation values to all parameters including scatter and time by creating a transformer list:
+MyBiexTransform <- transformerList(SFC_parameters, Biexponential)
+
+#  apply the transformation to gating set by rewriting the original gatingset:
+transform(SFC_gatingset, MyBiexTransform)
+
+# plot 4: FSC-A  vs SSC-A for 1 file:
+ggcyto(SFC_gatingset[6], subset="root",
+ aes(x="FSC-A", y="SSC-A")) + geom_hex(bins=100)
+
+# plot 5: FSC-A vs FCS-W for 1 file (usually a plot for doublets):
+ggcyto(SFC_gatingset[6], subset="root",
+ aes(x="FSC-A", y="FSC-W")) + geom_hex(bins=100)
+
+# plot 6: SSC-A vs Time for 1 file
+ggcyto(SFC_gatingset[6], subset="root", aes(x="Time", y="SSC-A")) + geom_hex(bins=100)
+```
+
+
+### FSC-A vs SSC-A
+
+untransformed: 
+
+![FSC-AvsSSC-A](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem1_plot_1.png)
+
+
+transformed: 
+
+![transformedFSC-AvsSSC-A](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/Problem1_plot_4.png)
+
+
+### FSC-A vs FCS-W:
+
+untransformed:
+
+![FSC-AvsFSC-W](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem1_plot_2.png)
+
+transformed:
+
+![transformedFSC-AvsFSC-W](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/Problem1_plot_5.png)
+
+
+### SSC-A vs Time
+
+untransformed:
+
+![SSC-AvsTime](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem1_plot_3.png)
+
+transformed:
+
+![transformedSSC-AvsTime](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem1_plot_6.png)
+
+
+Transformed scatter and time parameters look a bit distorted (Time even more so) when transformed. 
+Scales are different as well.
+
+
+# Problem 2
+
+"For the SFC data, I showed the setup for both Logicle and Biexponential, but didn’t have time to dive into the Logicle transformation. Select a couple markers of interest for the SFC data, visualize and screenshot the before, and then attempt to customize the biexponential arguments to best visualize the underlying data, and then repeat for Logicle. Take screenshots of both and compare/contrast the difference."
+
+## Solution
+
+### code setup:
+
+```{r}
+#| eval: FALSE
+
+
+# set up directory:
+getwd()
+
+# activate libraries:
+#library(flowWorkspace)
+#library(ggcyto)
+#library(dplyr)
+#library(stringr)
+#library(ggplot2)
+#library(flowCore)
+
+
+# load fcs files
+folder_path = file.path("data")
+fcs_files= list.files(folder_path, pattern=".fcs", full.names = TRUE)
+fcs_files
+
+
+# sort the different types of files into their respective type of files. 
+# Mass cytometry start with G1_2 and spectral flow cytometry files start with 2025.
+MC_files=fcs_files[str_detect(fcs_files, "G1_2")]
+MC_files
+
+SFC_files=fcs_files[str_detect(fcs_files, "2025")]
+SFC_files
+
+# Initialize gatingset for spectral flow cytometry files:
+##get files into a cytoset
+SFC_cytoset = load_cytoset_from_fcs(SFC_files, truncate_max_range=FALSE, transformation=FALSE)
+
+
+## pass files to a gatingset
+SFC_gatingset = GatingSet(SFC_cytoset)
+SFC_gatingset
+
+# getting parameters from gatingset:
+SFC_parameters = colnames(SFC_gatingset)
+SFC_parameters
+
+# removing scatters and time parameters from SFC_parameters for later transformation:
+fluorophores_only = SFC_parameters[!str_detect(SFC_parameters, "FSC|SSC|Time")]
+fluorophores_only
+
+# getting the marker list to know what I want to plot next:
+marker_fluorophores = markernames(SFC_gatingset)
+marker_fluorophores
+```
+
+### Biexponential transformation examples: 
+
+I want to visualize CD4 BUV-805 vs CD25 PE-Fire 744:
+
+```{r}
+#| eval: FALSE
+
+#preparing bioexponential transformation:
+Biexponential <- flowjo_biexp_trans() #default values
+Biexponential <- flowjo_biexp_trans(channelRange=4096, maxValue=262144,pos=4.5, neg=0, widthBasis=-1000) # width at -1000
+Biexponential <- flowjo_biexp_trans(channelRange=4096, maxValue=262144/2,pos=4.5, neg=0, widthBasis=-1000) # width and maxvalue changed:
+
+
+
+#applying transformation values to  fluorophores_only list by creating a transformer list:
+MyBiexTransform <- transformerList(fluorophores_only, Biexponential)
+
+#  apply the transformation to gating set:
+transform(SFC_gatingset, MyBiexTransform)
+
+# plot the flow plot for one file:
+ggcyto(SFC_gatingset[6], subset="root",
+ aes(x="BUV805-A", y="PE-Fire 744-A")) + geom_hex(bins=100)
+
+# confirming the transformation is applied according to what we actually set it to using another sample from our gating set and confirm values for channelrange, maxvalue, neg, pos, ad width basis are the same as the ones we provided.
+
+gh_get_transformations(SFC_gatingset[[1]])$'BUV805-A'
+```
+
+biexp trans default:
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_biexponential_default.png)
+
+
+biexp trans default values except width set at -1000:
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_biexponential_1.png)
+
+biexp trans default values except width set at -1000 and maxValue set at 262144/2:
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_biexponential_2.png)
+
+
+### Logical transformation examples:
+I want to visualize CD4 BUV-805 vs CD25 PE-Fire 744 but now with logicle transformation.
+
+let's first setup the gating set and the original plot with logicle transformation:
+
+```{r}
+#| eval: FALSE
+
+SFC_files=fcs_files[str_detect(fcs_files, "2025")]
+SFC_files
+
+# Initialize gatingset for spectral flow cytometry files:
+##get files into a cytoset
+SFC_cytoset = load_cytoset_from_fcs(SFC_files, truncate_max_range=FALSE, transformation=FALSE)
+
+
+## pass files to a gatingset
+SFC_gatingset = GatingSet(SFC_cytoset)
+SFC_gatingset
+
+# getting parameters from gatingset:
+SFC_parameters = colnames(SFC_gatingset)
+SFC_parameters
+
+# removing scatters and time parameters from SFC_parameters for later transformation:
+fluorophores_only = SFC_parameters[!str_detect(SFC_parameters, "FSC|SSC|Time")]
+fluorophores_only
+```
+
+Let's find out what arguments takes the logicle transformation by writing this on the console:
+
+?logicle_trans()
+?logicle_transform()
+
+The logicle_trans is, like the flowjo_biexp_trans(), a wrapper function and passes arguments to logicle_transform().
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_logicle_help.PNG)
+
+```{r}
+#| eval: FALSE
+
+#preparing logicle transformation using default values:
+
+Logicle_default = logicle_trans(w = 0.5, t = 262144,
+                 m = 4.5, a = 0) #default values
+
+# logicle with t= 10000
+Logicle_set1 = logicle_trans(w = 0.5, t = 10000, m=4.5, a=0)
+
+Logicle_set2 = logicle_trans(w = 1, t = 262144, m=4.5, a=0)
+
+Logicle_set3 = logicle_trans(w = 1.5, t = 262144, m=4.5, a=0)
+
+Logicle_set4 = logicle_trans(w = 1.5, t = 262144, m=5, a=0)
+
+
+#applying transformation values to  fluorophores_only list by creating a transformer list:
+My_logicle_transform = transformerList(fluorophores_only, Logicle_set4)
+
+#  apply the transformation to gating set:
+transform(SFC_gatingset, My_logicle_transform)
+
+# plot the flow plot for one file:
+ggcyto(SFC_gatingset[6], subset="root",
+ aes(x="BUV805-A", y="PE-Fire 744-A")) + geom_hex(bins=100)
+
+# confirming the transformation is applied according to what we actually set it to using another sample from our gating set and confirm values for channelrange, maxvalue, neg, pos, ad width basis are the same as the ones we provided.
+
+gh_get_transformations(SFC_gatingset[[1]])$'BUV805-A'
+```
+
+default logicle:
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_logicle_default.png)
+
+
+t = 10000
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_logicle_1.png)
+
+with logicle transformation it looks like there are extra negative values that are separated.
+
+getting solved with w = 1:
+
+logicle_trans(w = 1, t = 262144, m=4.5, a=0)
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_logicle_2.png)
+
+
+looking better at w= 1.5:
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_logicle_3.png)
+
+
+between w =1 and w = 1.5 the plot collapsed too much:
+
+Let's try w= 1.5 and m = 5:
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_logicle_4.png)
+
+The final plot looks similar to 
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_biexponential_2.png)
+
+I think I like how round the population in CD4 is compared to biexponential plot but I also think that for a final plot I'd choose biexponential as the positive and negative events look more balanced in the plot.
