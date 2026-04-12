@@ -1,7 +1,7 @@
 ---
 title: "Homework week 07"
 author: "Gabriela Ferreira"
-date: 05/04/2026
+date: 12/04/2026
 format:
   html:
     code-fold: true
@@ -28,7 +28,7 @@ toc-depth: 4
 getwd()
 
 # activate libraries:
-#library(flowWorkspace)
+#library(flowWorkspace) 
 #library(ggcyto)
 #library(dplyr)
 #library(stringr)
@@ -43,7 +43,8 @@ fcs_files
 
 
 # sort the different types of files into their respective type of files. 
-# Mass cytometry start with G1_2 and spectral flow cytometry files start with 2025.
+
+## Mass cytometry start with G1_2 and spectral flow cytometry files start with 2025.
 MC_files=fcs_files[str_detect(fcs_files, "G1_2")]
 MC_files
 
@@ -96,13 +97,13 @@ ggcyto(SFC_gatingset[6], subset="root", aes(x="Time", y="SSC-A")) + geom_hex(bin
 
 
 #preparing bioexponential transformation with default values:
-Biexponential <- flowjo_biexp_trans()
+Biexponential = flowjo_biexp_trans()
 
 #or
 #Biexponential <- flowjo_biexp_trans(channelRange=4096, maxValue=262144,pos=4.5, neg=0, widthBasis=-10) 
 
 #applying transformation values to all parameters including scatter and time by creating a transformer list:
-MyBiexTransform <- transformerList(SFC_parameters, Biexponential)
+MyBiexTransform = transformerList(SFC_parameters, Biexponential)
 
 #  apply the transformation to gating set by rewriting the original gatingset:
 transform(SFC_gatingset, MyBiexTransform)
@@ -129,7 +130,7 @@ untransformed:
 
 transformed: 
 
-![transformedFSC-AvsSSC-A](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/Problem1_plot_4.png)
+![transformedFSC-AvsSSC-A](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem1_plot_4.png)
 
 
 ### FSC-A vs FCS-W:
@@ -140,7 +141,7 @@ untransformed:
 
 transformed:
 
-![transformedFSC-AvsFSC-W](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/Problem1_plot_5.png)
+![transformedFSC-AvsFSC-W](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem1_plot_5.png)
 
 
 ### SSC-A vs Time
@@ -299,6 +300,7 @@ The logicle_trans is, like the flowjo_biexp_trans(), a wrapper function and pass
 
 ![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_logicle_help.PNG)
 
+
 ```{r}
 #| eval: FALSE
 
@@ -338,6 +340,7 @@ default logicle:
 
 
 t = 10000
+
 ![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_logicle_1.png)
 
 with logicle transformation it looks like there are extra negative values that are separated.
@@ -345,10 +348,12 @@ with logicle transformation it looks like there are extra negative values that a
 getting solved with w = 1:
 
 logicle_trans(w = 1, t = 262144, m=4.5, a=0)
+
 ![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_logicle_2.png)
 
 
 looking better at w= 1.5:
+
 ![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_logicle_3.png)
 
 
@@ -363,3 +368,359 @@ The final plot looks similar to
 ![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem2_biexponential_2.png)
 
 I think I like how round the population in CD4 is compared to biexponential plot but I also think that for a final plot I'd choose biexponential as the positive and negative events look more balanced in the plot.
+
+
+# Problem 3
+
+"There are to asinh style transformations provided by the flowWorkspace package. Using the mass cytometry data, select two metal markers of interest, visualize each, customize the arguments until you have properly visualized the underlying populations, and see if you can spot any major differences between the methods."
+
+## Solution
+
+### setup
+
+I will first get the working directory, activate needed libraries, get the full paths to the files and create a gating set for the mass cytometry files I have.
+
+```{r}
+#| eval: FALSE 
+
+# activate libraries:
+library(flowWorkspace) 
+library(ggcyto)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(flowCore)
+
+# load all fcs files
+folder_path = file.path("data")
+
+fcs_files = list.files(folder_path, pattern=".fcs", full.names = TRUE)
+
+fcs_files
+
+# sort the different types of files into their respective type of files. 
+## Mass cytometry start with G1_2 and spectral flow cytometry files start with 2025.
+MC_files = fcs_files[str_detect(fcs_files, "G1_2")]
+
+MC_files
+
+# create a cytoset for mass cytometry files:
+
+MC_cytoset = load_cytoset_from_fcs(MC_files, truncate_max_range = FALSE, transformation = FALSE)
+
+# create a gatingset for MC files:
+
+MC_gatingset = GatingSet(MC_cytoset)
+MC_gatingset
+
+# checking names for the metaltags:
+
+metal_tags = colnames(MC_gatingset)
+metal_tags
+
+# checking corresponding markers
+## calling them marker tags as in markers corresponding to the metal tags
+MC_parameters = markernames(MC_gatingset)
+MC_parameters
+```
+
+
+After having created the gatingset and get information on which metal tags and markers correspond to those are in variables we can go ahead and try plot using ggcyto().
+
+I want to plot CD14 vs CD16. 
+
+```{r}
+#| eval: FALSE
+
+
+# original plot without transformation applied:
+
+ggcyto(MC_gatingset[1], subset = "root", aes (x ="CD14", y="CD16")) + geom_hex(bins=100) 
+
+# or this code
+# ggcyto(MC_gatingset[1], subset = "root", aes (x ="Tb159Di", y="Er167Di")) + geom_hex(bins=100)
+# markers can be named by their marker name or by their parameter (fluorochrome or metal) 
+```
+
+this is what it looks like without applying transformations:
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem3_plot_1.png)
+
+
+Let's apply transformation to the parameters of interest. According to this page <https://rdrr.io/bioc/flowWorkspace/man/transform.html> the flowWorkspace library has 2 asinh transforms:
+
+1. flowjo_fasinh_trans, which is a wrapper function for the actual flowjo_fasinh() function
+
+and
+
+2. asinhtGml2_trans(), which in turn is a wrapper function for the actual asinh_Gml2() function.
+
+
+Starting with the 1st asinh transform where the default values can be gathered from "?flowjo_fasinh": 
+
+## Default values for flowjo_fasinh
+
+flowjo_fasinh(m = 4, t = 12000, a = 0.7, length = 256)
+flowjo_fsinh(m = 4, t = 12000, a = 0.7, length = 256)
+
+
+## arguments:
+
+Arguments
+m	
+numeric the full width of the transformed display in asymptotic decades
+
+t	
+numeric the maximum value of input data
+
+a	
+numeric Additional negative range to be included in the display in asymptotic decades
+
+length	
+numeric the maximum value of transformed data
+
+```{r}
+#| eval: FALSE
+
+# Remove beads and barcodes from markers of interest.
+
+markers_interest = MC_parameters[!str_detect("Barcode|Beads|beads", MC_parameters)]
+markers_interest
+
+# take only the names of the metals those are the ones we will transform
+
+metal_tags = names(markers_interest)
+metal_tags
+
+
+# use asinh to transform the parameters:
+
+## atribute the transform function to a variable:
+
+asinh = flowjo_fasinh_trans() # default values
+
+## transform the paramenter with transformersList:
+my_asinh_transform = transformerList(metal_tags, asinh)
+str(my_asinh_transform[1:3])
+
+
+## apply transformed parameters to the gating set:
+
+transform(MC_gatingset, my_asinh_transform)
+
+# plot with transformation applied:
+
+ggcyto(MC_gatingset[1], subset = "root", aes (x ="CD14", y="CD16")) + geom_hex(bins=100) 
+```
+
+plot with default flowjo_fasinh_trans() applied:
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem3_plot_2.png)
+
+
+Let's look at the default values for the other asinh function: "?asinh_Gml2"
+
+## default values for asinh gml2 function 
+
+asinh_Gml2(T = 262144, M = 4.5, A = 0, inverse = FALSE)
+
+## arguments for asinh_gml2():
+Arguments
+T	
+numeric the maximum value of input data
+
+M	
+numeric the full width of the transformed display in asymptotic decades
+
+A	
+numeric Additional negative range to be included in the display in asymptotic decades
+
+inverse	
+whether to return the inverse function
+
+
+Before we apply the new transform we need to reset the gatingset:
+
+```{r}
+#| eval: FALSE
+
+# create a cytoset for mass cytometry files:
+MC_cytoset = load_cytoset_from_fcs(MC_files, truncate_max_range = FALSE, transformation = FALSE)
+# create a gatingset for MC files:
+MC_gatingset = GatingSet(MC_cytoset)
+MC_gatingset
+```
+
+Using gml2 fasinh function:
+
+```{r}
+#| eval: FALSE
+
+
+# use asinh to transform the parameters:
+## atribute the transform function to a variable:
+gml2_fasinh = asinhtGml2_trans() # default values
+
+## transform the paramenter with transformersList:
+my_asinh_transform = transformerList(metal_tags, gml2_fasinh)
+str(my_asinh_transform[1:3])
+
+
+## apply transformed parameters to the gating set:
+
+transform(MC_gatingset, my_asinh_transform)
+
+# plot with transformation applied:
+
+ggcyto(MC_gatingset[1], subset = "root", aes (x ="CD14", y="CD16")) + geom_hex(bins=100) 
+```
+here's how it looks with gml2 fasinh transformation with default values.
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem3_plot_3.png)
+
+None of the default transformations looks good, so let's change some parameters in the flowjo_fasinh transform:
+
+
+```{r}
+#| eval: FALSE
+
+# reset gating set
+## create a cytoset for mass cytometry files:
+MC_cytoset = load_cytoset_from_fcs(MC_files, truncate_max_range = FALSE, transformation = FALSE)
+## create a gatingset for MC files:
+MC_gatingset = GatingSet(MC_cytoset)
+MC_gatingset
+
+# use asinh to transform the parameters:
+## atribute the transform function to a variable:
+asinh_set1 = flowjo_fasinh_trans(m = 5, t = 12000, a = 0.7, length = 256) # m = 5
+my_asinh_transform = transformerList(metal_tags, asinh_set1)
+str(my_asinh_transform[1:3])
+
+
+asinh_set2 = flowjo_fasinh_trans(m = 4, t = 12000, a = 1, length = 256) # a = 1
+my_asinh_transform = transformerList(metal_tags, asinh_set2)
+str(my_asinh_transform[1:3])
+
+
+asinh_set3 = flowjo_fasinh_trans(m = 5, t = 12000/2, a= 0.7, length = 256) # t=12000/2
+my_asinh_transform = transformerList(metal_tags, asinh_set3)
+str(my_asinh_transform[1:3])
+
+
+asinh_set4 = flowjo_fasinh_trans(m = 5, t = 12000/2, a= 0.3, length = 256) # t=12000/2
+my_asinh_transform = transformerList(metal_tags, asinh_set4)
+str(my_asinh_transform[1:3])
+
+## apply transformed parameters to the gating set:
+
+transform(MC_gatingset, my_asinh_transform)
+
+# plot with transformation applied:
+
+ggcyto(MC_gatingset[1], subset = "root", aes (x ="CD14", y="CD16")) + geom_hex(bins=100) 
+```
+
+m = 5 (width in asymptotic decades, originally 4)
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem3_plot_4.png)
+
+looks ok with more decades added to the display.
+
+a = 1 (number of additional negative decades)
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem3_plot_5.png)
+
+I thought increasing this number would show better the negative populations.
+
+t = 12000/2 (m=5 as well) which is input data
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem3_plot_6.png)
+
+I like the last plot but I want to see what happens if I decrease a to 0.3
+
+Let's try a new transformation with m = 5, a = 0.3, t= 12000/2:
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem3_plot_7.png)
+
+It collapsed the negative events of CD16 more than the previous one.
+
+Let's try changing the other function default values:
+
+
+```{r}
+#| eval: FALSE
+# reset gating set
+## create a cytoset for mass cytometry files:
+MC_cytoset = load_cytoset_from_fcs(MC_files, truncate_max_range = FALSE, transformation = FALSE)
+## create a gatingset for MC files:
+MC_gatingset = GatingSet(MC_cytoset)
+MC_gatingset
+
+# use asinh to transform the parameters:
+## atribute the transform function to a variable:
+gml2fasinh_set1 = asinhtGml2_trans(T = 262144, M = 5, A = 0) # M = 5
+my_asinh_transform = transformerList(metal_tags, gml2fasinh_set1)
+str(my_asinh_transform[1:3])
+
+gml2fasinh_set2= asinhtGml2_trans(T = 262144, M = 4, A = 0) # A = 3
+my_asinh_transform = transformerList(metal_tags, gml2fasinh_set2)
+str(my_asinh_transform[1:3])
+
+gml2fasinh_set3= asinhtGml2_trans(T = 262144/2, M = 4 , A = 0) # T = 262144/2
+my_asinh_transform = transformerList(metal_tags, gml2fasinh_set3)
+str(my_asinh_transform[1:3])
+
+gml2fasinh_set4= asinhtGml2_trans(T = 262144*2, M = 6 , A = -2) 
+my_asinh_transform = transformerList(metal_tags, gml2fasinh_set4)
+str(my_asinh_transform[1:3])
+
+gml2fasinh_set5= asinhtGml2_trans(T = 262144*2.5, M = 6.5 , A = -4) # T = 262144/2
+my_asinh_transform = transformerList(metal_tags, gml2fasinh_set5)
+str(my_asinh_transform[1:3])
+
+
+## apply transformed parameters to the gating set:
+
+transform(MC_gatingset, my_asinh_transform)
+
+# plot with transformation applied:
+
+ggcyto(MC_gatingset[1], subset = "root", aes (x ="CD14", y="CD16")) + geom_hex(bins=100) 
+```
+
+
+M = 5:
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem3_plot_8.png)
+
+not a lot of improvement, the flowjo_fasinh() had more changes to the better with the similar argument.
+
+A = 3:
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem3_plot_9.png)
+
+it seems like events were lost from the previous plot to this one. No improvement on visualization at all.
+
+T = default/2:
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem3_plot_10.png)
+
+this continues to not be good for visualization.
+
+Let's go on the opposite direction for T and A and increase M a bit more, T = default*2, M = 6, A = -2:
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem3_plot_11.png)
+
+we are getting somewhere!
+
+T = 262144*2.5, M = 6.5 , A = -4
+
+![](/course/07_Transformations/homeworks/alexandragabrielaferreira/images/problem3_plot_12.png)
+
+The gml2 function took longer to tweak to an ok level compared to the flowjo_fasinh().
+
+The major difference I noticed is how t and T which are similar arguments behaved differently, so t had to decrease to be able to start showing the populations while in the second T had to slightly more than double its value to show the populations properly.
+
+In the description found through research on the internet the main difference between these is:
+
+"It is simply a special form of flowjo_fasinh with length set to 1 and different default values for parameters t,m,a."
