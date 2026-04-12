@@ -1,0 +1,136 @@
+---
+title: Solutions for week06
+author: Jarkko Toivonen
+date: "`r Sys.Date()`"
+format: 
+    html:
+        df-print: kable
+        embed-resources: true
+knitr:
+  opts_chunk:
+    dev: "ragg_png"     # For exotic fonts / systemfonts support
+toc: true
+toc-depth: 5
+---
+
+```{r}
+library(tidyverse)
+library(ggbeeswarm)
+library(CytoML)
+library(ggcyto)
+```
+
+
+## Problem 1
+
+> In this session, we created beeswarm-style boxplot to display our T-cell frequencies on the y-axis, and timepoint on the x-axis. Using the concepts covered this week, swap out “timepoint” for the “Condition” variable. Adjust other layer arguments accordingly until you can return a similar plot at the end of the class. Finally, figure out how to switch around the order the Condition values are displayed on the x-axis.
+
+Read data.
+
+```{r}
+StorageLocation <- file.path("data") #When Quarto Rendering
+
+TheCSV <- list.files(StorageLocation, pattern=".csv", full.names=TRUE)
+Data <- read.csv(TheCSV, check.names=FALSE)
+```
+
+Process data.
+
+```{r}
+Data <- Data |> 
+    mutate(TcellProportion=Tcells_count/CD45_count) |>
+    mutate(TcellFrequency=TcellProportion *100) |>
+    mutate(TcellFrequency=round(TcellFrequency, 1))
+
+Data$timepoint <- factor(Data$timepoint)
+Data <- as_tibble(Data)
+```
+
+```{r}
+Data %>% head()
+```
+
+Associate sex with shapes and colours of points.
+
+```{r}
+shape_sex <- c("Female" = 22, "Male" = 21)
+fill_sex <- c("Female" = "white", "Male" = "black")
+```
+
+Do the plotting.
+
+```{r}
+Data %>% 
+    mutate(Condition = fct_rev(Condition)) %>% # Switch around the elements on the x-axis
+    ggplot() +
+    aes(x=Condition, y=TcellFrequency) + 
+    #aes(x=timepoint, y=TcellFrequency) +   # Old
+    geom_boxplot() + 
+    geom_beeswarm(size=2.5, cex=2.5, aes(shape=infant_sex, fill=infant_sex)) +
+    scale_shape_manual(values=shape_sex) + scale_fill_manual(values=fill_sex)
+```
+
+## Problem 2
+
+> Circle back to the CytoML-ggcyto flowplot, and modify it until happy with the visual appearance. You may use any resource on the internet to assist, but you must document your steps so that we can also repeat them.
+
+Read the data.
+
+```{r}
+# StorageLocation # Defined Above
+FlowJoWsp <- list.files(path = StorageLocation, pattern = ".wsp", full = TRUE)
+ws <- open_flowjo_xml(FlowJoWsp)
+gs <- flowjo_to_gatingset(ws=ws, name=1, path = StorageLocation, additional.keys = "GROUPNAME")
+```
+
+```{r}
+Plot <- 
+    ggcyto(gs[6],
+  #subset="/Scatter/Singlets/Live/Tcells/CD4-CD8-/TNFa+IFNg-", 
+  subset="Tcells", 
+  mapping = aes(x="CD8", y="CD4")) + 
+    #geom_point() +
+    geom_hex(bins=90)  # Less bins
+```
+
+Form a single-row dataframe which tells the number of cells in the plot.
+
+```{r}
+count <- flowWorkspace::gs_pop_get_count_fast(gs[6]) %>%
+    dplyr::filter(Population == "/Scatter/Singlets/Live/Tcells") %>%
+    mutate(name = str_remove(name, "_INF179"),   # Same facet as in the geom_hex layer
+      label = sprintf("%i cells", Count))   # The label to show in the plot
+```
+
+Add additional layer to the plot and make some other adjustments.
+
+```{r}
+Plot + 
+    # Show number of cells in the plotting area
+    geom_text(mapping = aes(label=label), x=I(0.9), y=I(0.9), data = count) +
+    theme_bw(base_family = "C059", base_size = 14) +  # Black-and-white theme
+                                                      # with different font, and overall
+                                                      # larger font size
+    scale_fill_continuous(breaks=c(1, 20, 40, 60)) +  # Show also the lowest count in the count legend
+    #guide_colorbar()
+    theme(plot.title = element_text(hjust = 0.5))  # Center the plot title
+```
+
+## Problem 3
+
+> In Mismatched Assumptions, we saw two examples of a histogram/density overlay showing the distribution of a variable on the x-axis. Similar to what we did during class to show values according to a different data column, try to modify the plot to show data on the basis of group (whether condition, ptype, infant_sex, etc.) similar to what you can see here
+
+
+```{r}
+Data %>%
+    ggplot(aes(x=TcellFrequency)) + 
+    geom_density(aes(color=ptype), fill=NA) +             # outline
+    geom_density(aes(fill=ptype), color=NA, alpha = 0.4)  # fill with more transparency
+```
+
+## Session info
+
+
+```{r}
+utils::sessionInfo()
+```
