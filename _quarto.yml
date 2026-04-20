@@ -1,0 +1,94 @@
+project:
+  type: website
+  output-dir: docs
+  render: 
+    - index.qmd
+    - Schedule.qmd
+    - ExistingResources.qmd
+    - PackageWalkthroughs.qmd
+    - course/index.qmd
+    - 00_*
+    - 01_*
+    - 02_*
+    - 03_*
+    - 04_*
+    - 05_*
+    - 06_*
+website:
+  google-analytics: "G-LZ35J3XE4D"
+  announcement: 
+    icon: info-circle
+    dismissable: true
+    content: "See Course tab for Course Materials, see YouTube tab for livestream recordings"
+    type: info
+    position: below-navbar 
+  page-navigation: true 
+  title: "Cytometry in R"
+  navbar:
+    logo: images/hex.svg
+    background: white
+    left:
+      - text: "About"
+        href: index.qmd
+      - text: "Schedule"
+        href: Schedule.qmd
+      - text: "Course"
+        href: course/index.qmd
+    right:
+    - text: Discussions
+      href: https://github.com/UMGCCCFCSR/CytometryInR/discussions
+    - icon: youtube
+      href: https://www.youtube.com/@CytometryInR
+      aria-label: YouTube
+    - icon: github
+      href: https://github.com/UMGCCCFCSR/CytometryInR
+      aria-label: GitHub
+  sidebar:
+    style: floating
+    collapse-level: 1
+    contents:
+    - section: "Getting Started"
+      contents:
+      - text: "00 - GitHub"
+        href: course/00_GitHub/index.qmd
+      - text: "00 - Workstation Setup"
+        href: course/00_WorkstationSetup/index.qmd
+      - text: "00 - Positron"
+        href: course/00_Positron/index.qmd
+      - text: "00 - Git"
+        href: course/00_Git/index.qmd
+      - text: "00 - Quarto"
+        href: course/00_Quarto/index.qmd
+      - text: "00 - Getting Help"
+        href: course/00_Homeworks/index.qmd
+      - text: "00 - Floreada"
+        href: course/00_Floreada/index.qmd
+    - section: "Intro to R"
+      contents:
+      - text: "01 - Installing R Packages"
+        href: course/01_InstallingRPackages/index.qmd
+      - text: "02 - File Paths"
+        href: course/02_FilePaths/index.qmd
+      - text: "03 - Inside a .FCS file"
+        href: course/03_InsideFCSFile/index.qmd
+      - text: "04 - Intro to Tidyverse"
+        href: course/04_IntroToTidyverse/index.qmd
+      - text: "05 - Gating Sets"
+        href: course/05_GatingSets/index.qmd    
+      - text: "06 - Visualizing With ggplot2"
+        href: course/06_Visualizing/index.qmd
+    - section: "Cytometry Core"
+      href: Schedule.qmd
+    - section: "Beyond the Sandbox"
+      href: Schedule.qmd
+    - section: "The World is your Oyster"
+      href: Schedule.qmd
+  page-footer: 
+   left: Made with [Quarto](https://quarto.org/)
+   right: |
+    ![AGPL-3.0](/images/AGPL3.png)
+    ![CC-BY-SA](/images/CCBYSA.png)
+format:
+  html:
+    css: styles.css
+
