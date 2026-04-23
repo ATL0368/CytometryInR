@@ -6,7 +6,14 @@ project:
     - Schedule.qmd
     - ExistingResources.qmd
     - PackageWalkthroughs.qmd
+<<<<<<< HEAD
     - course/index.qmd
+=======
+    - Homeworks.qmd
+    - Announcements.qmd
+    - course/index.qmd
+    - course/TakeAwayGallery.qmd
+>>>>>>> e277891a345df446c1e406e18bbff78126d26c90
     - 00_*
     - 01_*
     - 02_*
@@ -14,6 +21,12 @@ project:
     - 04_*
     - 05_*
     - 06_*
+<<<<<<< HEAD
+=======
+    - 07_*   
+    - 08_* 
+    - 09_*
+>>>>>>> e277891a345df446c1e406e18bbff78126d26c90
 website:
   google-analytics: "G-LZ35J3XE4D"
   announcement: 
@@ -34,9 +47,21 @@ website:
         href: Schedule.qmd
       - text: "Course"
         href: course/index.qmd
+<<<<<<< HEAD
     right:
     - text: Discussions
       href: https://github.com/UMGCCCFCSR/CytometryInR/discussions
+=======
+      - text: "Announcements"
+        href: Announcements.qmd        
+    right:
+    - text: Existing Resources
+      href: ExistingResources.qmd
+    - text: Discussions
+      href: https://github.com/UMGCCCFCSR/CytometryInR/discussions
+    - text: Homeworks
+      href: Homeworks.qmd
+>>>>>>> e277891a345df446c1e406e18bbff78126d26c90
     - icon: youtube
       href: https://www.youtube.com/@CytometryInR
       aria-label: YouTube
@@ -77,6 +102,15 @@ website:
         href: course/05_GatingSets/index.qmd    
       - text: "06 - Visualizing With ggplot2"
         href: course/06_Visualizing/index.qmd
+<<<<<<< HEAD
+=======
+      - text: "07 - Applying Transformations"
+        href: course/07_Transformations/index.qmd
+      - text: "08 - Ways to Gate"
+        href: course/08_WaysToGate/index.qmd    
+      - text: "09 - It's Raining Functions!"
+        href: course/09_Functions/index.qmd 
+>>>>>>> e277891a345df446c1e406e18bbff78126d26c90
     - section: "Cytometry Core"
       href: Schedule.qmd
     - section: "Beyond the Sandbox"
