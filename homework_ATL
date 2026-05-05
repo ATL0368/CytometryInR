@@ -1,0 +1,122 @@
+#Problem 1
+#for the imported GatingSet retrive the data.frame
+#for cell count per gate
+#attempt to mutte a new colum showing the percentatge of parent gate
+
+#Problem 2
+#CytoML. remove a couple of fcs files of the folder an 
+#rerun the code
+#document which error you get with the manimg
+
+#problem 3
+#ggcyto. try to play and visualize differnt subcell sets
+#TNFa vs IFNg
+#for both control and seb samples
+
+
+#1
+#open all packages needed
+library(flowCore)
+library(flowWorkspace)
+library(dplyr)
+Folder <- file.path("C:/Users/anjan/Downloads/R course/week-5/05_GatingSets/data")#home
+folder1 <- file.path("05_GatingSets", "data") # uni
+#now for reading the flowjow and do a gatingset
+GatingSetHomeworks <- flowjo_to_gatingset(ws=ws, name=1, path = folder1, additional.keys="GROUPNAME") 
+#now if you open it does have pointer and tranformation
+DataHomeworks <- gs_pop_get_count_fast(GatingSetHomeworks)
+str(DataHomeworks)
+#Classes ‘data.table’ and 'data.frame':	114 obs. of  5 variables:
+# and when you open you can see names, populations, parents, count, parent count.
+
+CellCount <- DataHomeworks@Count
+#does not work @ is for S4 objects, but DataHomeworks is a data.frame / data.table
+# so use $ instead
+#for counts
+CellCount <- DataHomeworks$Count
+#for gates
+Populations <- DataHomewroks$Parent
+#for parent count
+ParentCount <- DataHomeworks$ParentCount
+
+now to add colum of proprtion
+library(dplyr)
+
+DataHomeworks <- DataHomeworks |>
+  mutate(Percent_of_parent = ifelse(ParentCount > 0,
+                                    Count / ParentCount * 100))
+#ifelse() is just guarding against nonsense values.
+#simpler version
+DataHomeworks <- DataHomeworks |>
+  mutate(Percent_of_parent = Count / ParentCount * 100)
+# so now we added another colum
+#when opening datahomworks it added 5 to 6 colums. 
+# to have just 2 decimals
+DataHomeworks <- DataHomeworks |>
+  mutate(Percent_of_parent = round(Count / ParentCount * 100, 2))
+#but some cases the decimals rare higher than 2 like 0.3700
+#to see just 2 decimals
+
+DataHomeworks <- DataHomeworks |>
+  mutate(Percent_of_parent = round(Count / ParentCount * 100, 2))
+# now save this as exel sheet or fcs file
+write.csv(DataHomeworks,
+          file = file.path(folder1, "DataHomeworks.csv"),
+          row.names = FALSE)
+#for FCS file
+library(flowCore)
+numeric_data <- DataHomeworks |>
+  dplyr::select(where(is.numeric))    
+ff <- flowFrame(as.matrix(numeric_data))      
+write.FCS(ff, filename = file.path(folder1, "DataHomeworks.fcs"))
+#to look more into this one. you need to create a dataframe, for the matrix?
+
+#problem 3
+#ggcyto. try to play and visualize differnt subcell sets
+#TNFa vs IFNg
+#for both control and seb samples
+
+library(ggplot2)
+library(ggcyto)
+plot(gs)
+gs_get_pop_paths(gs)
+#[1] "root"                                              "/Scatter"                                          "/Scatter/Singlets"                                
+# [4] "/Scatter/Singlets/Live"                            "/Scatter/Singlets/Live/Tcells"                     "/Scatter/Singlets/Live/Tcells/CD4+"               
+# [7] "/Scatter/Singlets/Live/Tcells/CD4+/TNFa+IFNg+"     "/Scatter/Singlets/Live/Tcells/CD4+/TNFa+IFNg-"     "/Scatter/Singlets/Live/Tcells/CD4+/TNFa-IFNg+"    
+#[10] "/Scatter/Singlets/Live/Tcells/CD4+/TNFa-IFNg-"     "/Scatter/Singlets/Live/Tcells/CD4-CD8-"            "/Scatter/Singlets/Live/Tcells/CD4-CD8-/TNFa+IFNg+"
+#[13] "/Scatter/Singlets/Live/Tcells/CD4-CD8-/TNFa+IFNg-" "/Scatter/Singlets/Live/Tcells/CD4-CD8-/TNFa-IFNg+" "/Scatter/Singlets/Live/Tcells/CD4-CD8-/TNFa-IFNg-"
+#[16] "/Scatter/Singlets/Live/Tcells/CD8+"                "/Scatter/Singlets/Live/Tcells/CD8+/TNFa+IFNg+"     "/Scatter/Singlets/Live/Tcells/CD8+/TNFa+IFNg-"    
+#[19] "/Scatter/Singlets/Live/Tcells/CD8+/TNFa-IFNg+"     "/Scatter/Singlets/Live/Tcells/CD8+/TNFa-IFNg-"
+
+ggcyto(gs[1],
+       subset = "/Scatter/Singlets/Live/Tcells/CD4+",
+       aes(x = `TNFa-A`, y = `IFNg-A`)) +
+  geom_hex(bins = 100)
+colnames(gs[[1]])
+pData(parameters(gs[[1]]))
+fr <- gh_pop_get_data(gs[[1]])
+
+CD4+
+ggcyto(gs[1],
+       subset = "CD4+",
+       aes(x = `Comp-PE-Dazzle594-A`,
+           y = `Comp-BV750-A`)) +
+  geom_hex(bins = 100)
+#or
+ggcyto(gs[1],
+       subset = "CD4+",
+       aes(x = `TNFa`,
+           y = `IFNg`)) +
+  geom_hex(bins = 100)
+
+
+# CD8
+ggcyto(gs[1],
+       subset = "CD8+",
+       aes(x = `TNFa`,
+           y = `IFNg`)) +
+  geom_hex(bins = 100)
+
+git add .
+git commit -m "working on homeworks"
+git push
