@@ -15,9 +15,6 @@ select (), rename(), relocate()
 # bind, timepoint, condtion
 paste0() to save as new colum name 
 
-git add .
-git commit -m "end of the lesson"
-git push
 
 #problem1 + 2
 #get a dataset from females and 27/07/2025
@@ -93,3 +90,7 @@ exel <- exel |> mutate(ID = paste(bid, timepoint, Condition, sep = "_"))
 # use select()
 exel <- exel |> select(ID)
 #now just have the colum all togheter !! :)
+
+git add .
+git commit -m "end homeworks"
+git push
